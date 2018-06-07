@@ -64,6 +64,21 @@ public class AACDecodeModel {
 //            InputStream in = new InputStream;
             mMediaExtractor.setDataSource(targetFile.getAbsolutePath());
             //获取含有音频的MediaFormat
+
+
+            // 音频文件信息
+            MediaFormat format = mMediaExtractor.getTrackFormat(0);
+
+            mime = format.getString(MediaFormat.KEY_MIME);
+            int sampleRate = format.getInteger(MediaFormat.KEY_SAMPLE_RATE);
+            // 声道个数：单声道或双声道
+            int channels = format.getInteger(MediaFormat.KEY_CHANNEL_COUNT);
+            // if duration is 0, we are probably playing a live stream
+            long duration = format.getLong(MediaFormat.KEY_DURATION);
+            // System.out.println("歌曲总时间秒:"+duration/1000000);
+            int bitrate = format.getInteger(MediaFormat.KEY_BIT_RATE);
+            Log.e("zhen2", "mime="+mime+" bit_rate="+bitrate+" sample_rate="+sampleRate +" channels="+channels +" duration="+duration);
+
             MediaFormat mediaFormat = createMediaFormat();
             mMediaDecode = MediaCodec.createDecoderByType(mime);
             mMediaDecode.configure(mediaFormat, null, null, 0);//当解压的时候最后一个参数为0
@@ -73,7 +88,7 @@ public class AACDecodeModel {
             outputBuffers = mMediaDecode.getOutputBuffers();
             bufferInfo = new MediaCodec.BufferInfo();
         } catch (IOException e) {
-            Log.e("tag_ioException",e.getMessage()+"");
+            Log.e("zhen",e.getMessage()+"");
             e.printStackTrace();
         }
     }
@@ -82,11 +97,10 @@ public class AACDecodeModel {
         //获取文件的轨道数，做循环得到含有音频的mediaFormat
         for (int i = 0; i < mMediaExtractor.getTrackCount(); i++) {
             MediaFormat mediaFormat = mMediaExtractor.getTrackFormat(i);
-//            int bit_rate = mediaFormat.getInteger(MediaFormat.KEY_BIT_RATE);
-//            int sample_rate = mediaFormat.getInteger(MediaFormat.KEY_SAMPLE_RATE);
-//            Log.e("zhen2", "bit_rate="+bit_rate+" sample_rate="+sample_rate);
             //MediaFormat键值对应
             String mime = mediaFormat.getString(MediaFormat.KEY_MIME);
+            Log.e("zhen2", "mime=" + mime);
+
             if (mime.contains("audio/")) {
                 mMediaExtractor.selectTrack(i);
                 return mediaFormat;

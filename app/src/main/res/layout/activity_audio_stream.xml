@@ -13,7 +13,8 @@
         android:layout_alignStart="@+id/btn_stream_record"
         android:layout_marginStart="34dp"
         android:layout_marginTop="72dp"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:id="@+id/linearLayout">
 
         <TextView
             android:id="@+id/tv_stream_record"
@@ -37,5 +38,22 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentStart="true"
         android:text="录制" />
+
+    <Button
+        android:id="@+id/btn_stream_decode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/linearLayout"
+        android:layout_below="@+id/linearLayout"
+        android:layout_marginTop="54dp"
+        android:text="aac字节数组解码成aac" />
+
+    <Button
+        android:id="@+id/btn_stream_play_pcm"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/btn_stream_decode"
+        android:layout_below="@+id/btn_stream_decode"
+        android:text="播放aac解码成pcm文件" />
 
 </RelativeLayout>

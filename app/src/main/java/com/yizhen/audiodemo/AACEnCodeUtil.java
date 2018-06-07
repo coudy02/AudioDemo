@@ -46,7 +46,7 @@ public class AACEnCodeUtil {
             mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
             mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 96000);
             mediaFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);
-            mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024 * 1024);
+            mediaFormat.setInteger(MediaFormat.KEY_MAX_INPUT_SIZE, 1024);
             mediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, 44100);
     /*
        第四个参数 编码的时候是MediaCodec.CONFIGURE_FLAG_ENCODE
@@ -70,6 +70,67 @@ public class AACEnCodeUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    public  byte[]  encodeData2(byte[] data, int length){
+
+        Log.e("zhen", "data="+ data.length);
+        //dequeueInputBuffer（time）需要传入一个时间值，-1表示一直等待，0表示不等待有可能会丢帧，其他表示等待多少毫秒
+        int inputIndex = mMediaCodec.dequeueInputBuffer(-1);//获取输入缓存的index
+        Log.e("zhen", "inputIndex="+ inputIndex);
+        if (inputIndex >= 0) {
+            ByteBuffer inputByteBuf = inputBufferArray[inputIndex];
+            Log.e("zhen", "inputByteBuf**"+inputIndex+"="+ inputByteBuf);
+            inputByteBuf.clear();
+            Log.e("zhen", "inputByteBuf*clear="+ inputByteBuf);
+            inputByteBuf.put(data);//添加数据
+            inputByteBuf.limit(length);//限制ByteBuffer的访问长度
+            mMediaCodec.queueInputBuffer(inputIndex, 0, data.length, 0, 0);//把输入缓存塞回去给MediaCodec
+        }
+        Log.e("zhen", "mBufferInfo="+ mBufferInfo.size);
+        int outputIndex;
+        while(true){
+            outputIndex = mMediaCodec.dequeueOutputBuffer(mBufferInfo, 0);//获取输出缓存的index
+            Log.e("zhen", "outputIndex="+ outputIndex);
+            if(outputIndex >= 0){
+                break;
+            }
+        }
+        while (outputIndex >= 0) {
+            //获取缓存信息的长度sd
+            int byteBufSize = mBufferInfo.size;
+            //添加ADTS头部后的长度
+            int bytePacketSize = byteBufSize + 7;
+
+            ByteBuffer  outPutBuf = outputBufferArray[outputIndex];
+            outPutBuf.position(mBufferInfo.offset);
+            outPutBuf.limit(mBufferInfo.offset+mBufferInfo.size);
+
+            byte[] targetByte = new byte[bytePacketSize];
+            //添加ADTS头部
+            addADTStoPacket(targetByte,bytePacketSize);
+            /*
+            get（byte[] dst,int offset,int length）:ByteBuffer从position位置开始读，读取length个byte，并写入dst下
+            标从offset到offset + length的区域
+             */
+            outPutBuf.get(targetByte,7,byteBufSize);
+
+            outPutBuf.position(mBufferInfo.offset);
+
+            try {
+                // 这个是封装的二进制的aac流  targetByte
+                // 这个是封装的二进制的aac流  targetByte
+                fileOutputStream.write(targetByte);
+                return targetByte;
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            //释放
+            mMediaCodec.releaseOutputBuffer(outputIndex,false);
+            outputIndex = mMediaCodec.dequeueOutputBuffer(mBufferInfo,0);
+        }
+        return null;
     }
 
     byte[]  totalByte = new byte[0];

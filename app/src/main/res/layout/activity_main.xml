@@ -16,6 +16,19 @@
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/check_group_list_item_name"
+        android:layout_width="80dp"
+        android:layout_height="22dp"
+        android:singleLine="true"
+        android:focusableInTouchMode="true"
+        android:text="组员1组员1组员1组员1组员3组员4组员5组员6"
+        android:ellipsize="marquee"
+        android:marqueeRepeatLimit="marquee_forever"
+        android:focusable="true"
+         />
+
+
     <Button
         android:id="@+id/btn_file_mode"
         android:layout_width="wrap_content"

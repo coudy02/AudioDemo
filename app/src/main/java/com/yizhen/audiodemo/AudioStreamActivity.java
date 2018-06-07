@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.File;
@@ -57,9 +58,8 @@ public class AudioStreamActivity extends AppCompatActivity {
     private long mEndTime;
     private File audioFile;
     private FileOutputStream mFileOutputStream;
-    private ByteArrayOutputStream mbaos;
 
-    private int BUFFER_SIZE = 1024 * 10;
+    private int BUFFER_SIZE = 1024*2;
     private byte[] mBuffer;
     private FileInputStream fis = null;
     private AudioTrack mAudioTrack;
@@ -130,9 +130,11 @@ public class AudioStreamActivity extends AppCompatActivity {
                     public void run() {
                         if(outBytea.length > 0){
 //                            Log.e("zhen","解码=" + outBytea.length);
-//                            new AACDecoderUtil().decode(outBytea, 0, outBytea.length);
-
-                            new AACDecodeModel().decode();
+                            new AACDecoderUtil().decode(outBytea, 0, outBytea.length);
+//                            AACDecoderUtil_2 utile2 = new AACDecoderUtil_2();
+//                            utile2.prepare();
+//                            utile2.decode(outBytea, 0, outBytea.length);
+//                            new AACDecodeModel().decode();
 
                         }
                     }
@@ -231,7 +233,7 @@ public class AudioStreamActivity extends AppCompatActivity {
             while (mIsPlaying && (read = fis.read(mBuffer)) > 0) {
                 mAudioTrack.write(mBuffer, 0, read);
                 Log.e("zhen", "长度=" + outBytea.length + "");
-                outBytea = edCode.encodeData(mBuffer, read);
+//                outBytea = edCode.encodeData(mBuffer, read);
                 Log.e("zhen", "aac长度=" + outBytea.length + "");
             }
             return true;
@@ -263,16 +265,19 @@ public class AudioStreamActivity extends AppCompatActivity {
      */
     private boolean startRecord() {
         try {
+            AACEnCodeUtil edCode = new AACEnCodeUtil();
+            AACDecoderUtil deCodec = new AACDecoderUtil();
+            AacEncode aacEncode = new AacEncode();
             // 创建录音文件
             audioFile = createFile();
             // 创建文件输出流
             mFileOutputStream = new FileOutputStream(audioFile);
-            mbaos = new ByteArrayOutputStream();
+
             //(int audioSource, int sampleRateInHz, int channelConfig, int audioFormat, int bufferSizeInBytes)
             int audioSource = MediaRecorder.AudioSource.MIC;
             int sampleRateInHz = 44100;
 //            int channelConfig = AudioFormat.CHANNEL_IN_MONO;//单声道
-            int channelConfig = AudioFormat.CHANNEL_IN_STEREO;//单声道
+            int channelConfig = AudioFormat.CHANNEL_IN_STEREO;//双声道
             int audioFormat = AudioFormat.ENCODING_PCM_16BIT; // 录制的格式
             // 计算 AudioRecord 里内部里 buffer 的 最小大小 --------有啥用呢？？？？如果小于会怎样
             int minBufferSize = AudioRecord.getMinBufferSize(sampleRateInHz, channelConfig, audioFormat);
@@ -282,25 +287,38 @@ public class AudioStreamActivity extends AppCompatActivity {
             mAudioRecord.startRecording();
             // 记录开始时间
             mStartTime = System.currentTimeMillis();
+
             byte[] outBytea = new byte[0];
-            // 循环读取数据，写到输出流中
+
             while (mIsRecording) {
                 // 只要还在录音状态，就一直读
                 int read = mAudioRecord.read(mBuffer, 0, BUFFER_SIZE);
+                Log.e("zhen", "read="+read);
                 if (read > 0) { // 读取成功
-                    mFileOutputStream.write(mBuffer, 0, read);
-
-                    mbaos.write(mBuffer, 0, read);
-
+                    byte[] bytes = aacEncode.offerEncoder(mBuffer, read);
+                    Log.e("zhen", "bytes="+bytes.length);
+                    deCodec.decode(bytes, 0, bytes.length);
                 } else {  // 读取失败, 提示用户
                     recordFail();
                     return false;
                 }
             }
 
+//            // 循环读取数据，写到输出流中
+//            while (mIsRecording) {
+//                // 只要还在录音状态，就一直读
+//                int read = mAudioRecord.read(mBuffer, 0, BUFFER_SIZE);
+//                Log.e("zhen", "read="+read);
+//                if (read > 0) { // 读取成功
+//                    mFileOutputStream.write(mBuffer, 0, read);
+//                } else {  // 读取失败, 提示用户
+//                    recordFail();
+//                    return false;
+//                }
+//            }
             // 退出循环，停止录音，释放录音器
             return stopRecord();
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             // 捕获异常，避免闪退，提示用户
             recordFail();
@@ -412,7 +430,4 @@ public class AudioStreamActivity extends AppCompatActivity {
         }
         return file;
     }
-
-
-
 }

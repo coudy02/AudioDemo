@@ -1,9 +1,5 @@
 package com.yizhen.audiodemo;
 
-/**
- * Created by Administrator on 2018/4/10.
- */
-
 import android.media.AudioFormat;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -14,27 +10,34 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 /**
- * Created by ZhangHao on 2017/5/17.
- * 用于aac音频解码
+ * Created by Administrator on 2018/5/12.
  */
 
-public class AACDecoderUtil {
+public class AACDecoderUtil_2 {
+
     private static final String TAG = "AACDecoderUtil";
-    private static final String tag2 = "--D--";
     //声道数
     private static final int KEY_CHANNEL_COUNT = 2;
     //采样率
-    private static final int KEY_SAMPLE_RATE = 44100;
+    private static final int KEY_SAMPLE_RATE = 48000;
     //用于播放解码后的pcm
     private MyAudioTrack mPlayer;
     //解码器
     private MediaCodec mDecoder;
     //用来记录解码失败的帧数
     private int count = 0;
+    private int tempNum = 0;
+    //缓冲区 就算缓冲两帧的数据，声音也不正常，只能一帧帧来？？？？？？？？？？
+    //不是放得慢，可能是放得太快了，晕
+    /*private int maxByteBuffer=548;
+    private byte[] decoderBuffer=new byte[maxByteBuffer];
+    *//**
+     * 放在decoderBuffer中byte的长度
+     *//*
+    private int decoderBufferLen=0;*/
 
-    public AACDecoderUtil(){
-        start();
-    }
+
+
 
     /**
      * 初始化所有变量
@@ -51,6 +54,7 @@ public class AACDecoderUtil {
     public boolean prepare() {
         // 初始化AudioTrack
         mPlayer = new MyAudioTrack(KEY_SAMPLE_RATE, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_16BIT);
+        //mPlayer = new MyAudioTrack(KEY_SAMPLE_RATE, AudioFormat.CHANNEL_OUT_STEREO, AudioFormat.ENCODING_PCM_FLOAT);
         mPlayer.init();
         try {
             //需要解码数据的类型
@@ -62,24 +66,21 @@ public class AACDecoderUtil {
             //数据类型
             mediaFormat.setString(MediaFormat.KEY_MIME, mine);
             //声道个数
-            mediaFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, 2);
+            mediaFormat.setInteger(MediaFormat.KEY_CHANNEL_COUNT, KEY_CHANNEL_COUNT);
             //采样率
-            mediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, 44100);
+            mediaFormat.setInteger(MediaFormat.KEY_SAMPLE_RATE, KEY_SAMPLE_RATE);
             //比特率
-            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 96000);
+
+            //mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 128000);
+            mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, 356000);
             //用来标记AAC是否有adts头，1->有
-            mediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 1);
+            mediaFormat.setInteger(MediaFormat.KEY_IS_ADTS, 0);
             //用来标记aac的类型
             mediaFormat.setInteger(MediaFormat.KEY_AAC_PROFILE, MediaCodecInfo.CodecProfileLevel.AACObjectLC);
             //ByteBuffer key（暂时不了解该参数的含义，但必须设置）
-//            byte[] data = new byte[]{(byte) 0x11, (byte) 0x90};
-//            ByteBuffer csd_0 = ByteBuffer.wrap(data);
-//            csd_0 = ByteBuffer.allocate(2);
-//            Log.e("zhen2","data[1]="+data[1] + " data[0]="+data[0] +" csd_0="+csd_0.array().length);
-//            mediaFormat.setByteBuffer("csd-0", csd_0);
-
-            mediaFormat.setByteBuffer("csd-0", ByteBuffer.allocate(2).put(new byte[]{(byte) 0x11, (byte)0x90}));
-
+            byte[] data = new byte[]{(byte) 0x11, (byte) 0x90};
+            ByteBuffer csd_0 = ByteBuffer.wrap(data);
+            mediaFormat.setByteBuffer("csd-0", csd_0);
             //解码器配置
             mDecoder.configure(mediaFormat, null, null, 0);
         } catch (IOException e) {
@@ -93,24 +94,24 @@ public class AACDecoderUtil {
         return true;
     }
 
-//    MediaCodec mediaCodec;
-//    private void prepare2(){
-//        mediaCodec = MediaCodec.createDecoderByType(MCodecInfo.TYPE);  //创建解码器
-//        MediaFormat mediaFormat = MediaFormat.createVideoFormat(MCodecInfo.TYPE, mcInfo.picWidth, mcInfo.picHeight);
-//        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, mcInfo.bitrate * 1000);
-//        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, mcInfo.framerate);
-//        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, mcInfo.format);
-//        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, mcInfo.keyFrameInterval);
-//        mediaCodec.configure(mediaFormat, surface, null, 0);
-//        mediaCodec.start();
-//        inputBuffers = mediaCodec.getInputBuffers();
-//        outputBuffers = mediaCodec.getOutputBuffers();
-//    }
-
     /**
      * aac解码+播放
      */
     public void decode(byte[] buf, int offset, int length) {
+        /*L.w("tan","decode decoderBufferLen="+decoderBufferLen);
+        byte[] myDecodeBuffer;
+        if ((decoderBufferLen + length) < maxByteBuffer) {
+            // System.arraycopy(data1,0,data3,0,data1.length);
+            System.arraycopy(buf,0,decoderBuffer,decoderBufferLen,length);
+            decoderBufferLen=decoderBufferLen+length;
+            return;
+        }else {
+            myDecodeBuffer=new byte[decoderBufferLen + length];
+            System.arraycopy(decoderBuffer,0,myDecodeBuffer,0,decoderBufferLen);
+            System.arraycopy(buf,0,myDecodeBuffer,decoderBufferLen,length);
+            decoderBufferLen=0;
+        }
+        L.e("tan","decode begin myDecodeBuffer.length="+myDecodeBuffer.length);*/
         //输入ByteBuffer
         ByteBuffer[] codecInputBuffers = mDecoder.getInputBuffers();
         //输出ByteBuffer
@@ -120,7 +121,6 @@ public class AACDecoderUtil {
         try {
             //返回一个包含有效数据的input buffer的index,-1->不存在
             int inputBufIndex = mDecoder.dequeueInputBuffer(kTimeOutUs);
-            Log.e("zhen2", "D: inputBufIndex="+inputBufIndex);
             if (inputBufIndex >= 0) {
                 //获取当前的ByteBuffer
                 ByteBuffer dstBuf = codecInputBuffers[inputBufIndex];
@@ -129,20 +129,23 @@ public class AACDecoderUtil {
                 //填充数据
                 dstBuf.put(buf, offset, length);
                 //将指定index的input buffer提交给解码器
-                 mDecoder.queueInputBuffer(inputBufIndex, 0, length, 0, 0);
+                mDecoder.queueInputBuffer(inputBufIndex, 0, length, 0, 0);
             }
             //编解码器缓冲区
             MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
             //返回一个output buffer的index，-1->不存在
             int outputBufferIndex = mDecoder.dequeueOutputBuffer(info, kTimeOutUs);
-            Log.e("zhen2", "D: outputBufferIndex="+outputBufferIndex);
 
             if (outputBufferIndex < 0) {
                 //记录解码失败的次数
                 count++;
+                if(tempNum++>100){
+                    tempNum=0;
+                    Log.w("tan","解码失败的次数 count="+count);
+                }
+
             }
             ByteBuffer outputBuffer;
-            Log.e("zhen2", "D: outputBufferIndex="+outputBufferIndex);
             while (outputBufferIndex >= 0) {
                 //获取解码后的ByteBuffer
                 outputBuffer = codecOutputBuffers[outputBufferIndex];
@@ -151,7 +154,7 @@ public class AACDecoderUtil {
                 outputBuffer.get(outData);
                 //清空缓存
                 outputBuffer.clear();
-                //播放解码后的数据
+                //播放
                 mPlayer.playAudioTrack(outData, 0, info.size);
                 //释放已经解码的buffer
                 mDecoder.releaseOutputBuffer(outputBufferIndex, false);
@@ -186,4 +189,5 @@ public class AACDecoderUtil {
             e.printStackTrace();
         }
     }
+
 }
